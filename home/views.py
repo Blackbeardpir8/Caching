@@ -39,13 +39,13 @@ def index(request):
     brands = cache.get("brands")
     if brands is None:
         brands = Product.objects.values_list('brand', flat=True).distinct().order_by('brand')
-        cache.set("brands", brands, 60 * 1)
+        cache.set("brands", brands, 60 * 10)
 
     # Fetch categories from cache or database
     categories = cache.get("categories")
     if categories is None:
         categories = Product.objects.values_list('category', flat=True).distinct().order_by('category')
-        cache.set("categories", categories, 60 * 1)
+        cache.set("categories", categories, 60 * 10)
 
     context = {
         'results': results,
