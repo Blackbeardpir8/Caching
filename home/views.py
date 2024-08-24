@@ -2,10 +2,8 @@ from django.shortcuts import render
 from home.models import Product
 from django.contrib.postgres.search import SearchVector, SearchQuery, SearchRank, TrigramSimilarity
 from django.db.models import Q
-
-
 from django.views.decorators.cache import cache_page
-
+from django.core.cache import cache
 
 @cache_page(60*1)
 def index(request):
@@ -37,8 +35,17 @@ def index(request):
     if category:
         results = results.filter(category__icontains=category)
 
-    brands = Product.objects.values_list('brand', flat=True).distinct().order_by('brand')
-    categories = Product.objects.values_list('category', flat=True).distinct().order_by('category')
+    # Fetch brands from cache or database
+    brands = cache.get("brands")
+    if brands is None:
+        brands = Product.objects.values_list('brand', flat=True).distinct().order_by('brand')
+        cache.set("brands", brands, 60 * 1)
+
+    # Fetch categories from cache or database
+    categories = cache.get("categories")
+    if categories is None:
+        categories = Product.objects.values_list('category', flat=True).distinct().order_by('category')
+        cache.set("categories", categories, 60 * 1)
 
     context = {
         'results': results,
