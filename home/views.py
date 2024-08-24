@@ -5,7 +5,7 @@ from django.db.models import Q
 from django.views.decorators.cache import cache_page
 from django.core.cache import cache
 
-@cache_page(60*1)
+@cache_page(60*1)  
 def index(request):
     search = request.GET.get('search')
     min_price = request.GET.get('min_price')
@@ -13,40 +13,48 @@ def index(request):
     brand = request.GET.get('brand')
     category = request.GET.get('category')
 
+  
     results = Product.objects.all()
 
+    
     if search:
         query = SearchQuery(search)
         vector = SearchVector("title", "description", "category", "brand")
         rank = SearchRank(vector, query)
         results = results.annotate(
             rank=rank,
-            similarity=TrigramSimilarity('title', search) + TrigramSimilarity('description', search) + TrigramSimilarity('category', search) + TrigramSimilarity('brand', search)
+            similarity=TrigramSimilarity('title', search) + 
+                       TrigramSimilarity('description', search) + 
+                       TrigramSimilarity('category', search) + 
+                       TrigramSimilarity('brand', search)
         ).filter(Q(rank__gte=0.3) | Q(similarity__gte=0.3)).distinct().order_by('-rank', '-similarity')
 
+    
     if min_price and max_price:
         results = results.filter(
             price__gte=float(min_price), price__lte=float(max_price)
         ).order_by('price')
 
+    
     if brand:
         results = results.filter(brand__icontains=brand)
 
+   
     if category:
         results = results.filter(category__icontains=category)
 
-    # Fetch brands from cache or database
+    
     brands = cache.get("brands")
     if brands is None:
         brands = Product.objects.values_list('brand', flat=True).distinct().order_by('brand')
-        cache.set("brands", brands, 60 * 10)
+        cache.set("brands", brands, 60 * 10)  
 
-    # Fetch categories from cache or database
+ 
     categories = cache.get("categories")
     if categories is None:
         categories = Product.objects.values_list('category', flat=True).distinct().order_by('category')
-        cache.set("categories", categories, 60 * 10)
-
+        cache.set("categories", categories, 60 * 10)  
+    
     context = {
         'results': results,
         'categories': categories,
