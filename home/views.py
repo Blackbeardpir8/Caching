@@ -3,6 +3,11 @@ from home.models import Product
 from django.contrib.postgres.search import SearchVector, SearchQuery, SearchRank, TrigramSimilarity
 from django.db.models import Q
 
+
+from django.views.decorators.cache import cache_page
+
+
+@cache_page(60*1)
 def index(request):
     search = request.GET.get('search')
     min_price = request.GET.get('min_price')
